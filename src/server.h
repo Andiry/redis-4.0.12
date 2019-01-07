@@ -1201,6 +1201,9 @@ struct redisServer {
     /* System hardware info */
     size_t system_memory_size;  /* Total memory in system as reported by OS */
 
+    /* NVM related. */
+    int nvm_mode;
+
     /* Mutexes used to protect atomic variables when atomic builtins are
      * not available. */
     pthread_mutex_t lruclock_mutex;
