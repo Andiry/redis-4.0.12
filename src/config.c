@@ -738,6 +738,10 @@ void loadServerConfigFromString(char *config) {
                 err = sentinelHandleConfiguration(argv+1,argc-1);
                 if (err) goto loaderr;
             }
+        } else if (!strcasecmp(argv[0], "nvm")) {
+	    /* NVM mode. Disable appendfsync. */
+	    printf("Redis NVM mode. Disable appenfsync.\n");
+	    server.aof_fsync = AOF_FSYNC_NO;
         } else {
             err = "Bad directive or wrong number of arguments"; goto loaderr;
         }
