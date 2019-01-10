@@ -3850,9 +3850,6 @@ int main(int argc, char **argv) {
         sdsfree(options);
     }
 
-    if (server.nvm_mode == 1)
-      nvm_init_server(&server);
-
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
         "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
@@ -3877,6 +3874,9 @@ int main(int argc, char **argv) {
     redisSetProcTitle(argv[0]);
     redisAsciiArt();
     checkTcpBacklogSettings();
+
+    if (server.nvm_mode == 1)
+      nvm_init_server(&server);
 
     if (!server.sentinel_mode) {
         /* Things not needed when running in Sentinel mode. */

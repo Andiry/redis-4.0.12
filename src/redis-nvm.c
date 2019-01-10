@@ -57,7 +57,7 @@ static int nvm_create_dict(dict* redis_dict,
   dictht* redis_ht;
   int ret;
 
-  sprintf(filename, "%s0.ht", name);
+  sprintf(filename, "%s-0.ht", name);
   ret = nvm_map_dict_file(filename,
                           nvm_dict->hashtable0_size,
                           &nvm_dict->hashtable0_addr,
@@ -69,7 +69,7 @@ static int nvm_create_dict(dict* redis_dict,
   redis_ht = &redis_dict->ht[0];
   redis_ht->table = (dictEntry**)(nvm_dict->hashtable0_addr);
 
-  sprintf(filename, "%s1.ht", name);
+  sprintf(filename, "%s-1.ht", name);
   ret = nvm_map_dict_file(filename,
                           nvm_dict->hashtable1_size,
                           &nvm_dict->hashtable1_addr,
@@ -127,10 +127,11 @@ int nvm_init_server(struct redisServer* server) {
   server->nvm_server = (void*)nvm_server;
 
   for (int i = 0; i < nvm_server->num_dicts; i++) {
-    sprintf(name, "%s%d.dict", prefix, i);
     struct nvm_dict* nvm_dict = &nvm_server->nvm_dicts[i];
     dict* redis_dict = server->db[i].dict;
 
+    sprintf(name, "%s%d.dict", prefix, i);
+    serverLog(LL_WARNING, "Create NVM dict %d", i);
     if ((fd = open(name, O_RDWR, 0666)) < 0) {
       /* Create new NVM dict */
       if ((fd = open(name, O_CREAT | O_RDWR, 0666)) < 0) {
@@ -148,16 +149,17 @@ int nvm_init_server(struct redisServer* server) {
       }
     }
 
-    ret = nvm_create_dict(redis_dict, nvm_dict, prefix);
+    sprintf(name, "%s%d", prefix, i);
+    ret = nvm_create_dict(redis_dict, nvm_dict, name);
     if (ret) {
       serverLog(LL_WARNING, "Create NVM dict %s failed", name);
       goto out;
     }
   }
 
-  printf("Initialize NVM server finished.\n");
+  serverLog(LL_WARNING, "Initialize NVM server finished.");
   /* NVM mode. Disable appendfsync. */
-  printf("Running Redis in NVM mode. Disable appenfsync.\n");
+  serverLog(LL_WARNING, "Running Redis in NVM mode. Disable appenfsync.");
   server->aof_fsync = AOF_FSYNC_NO;
   server->aof_state = AOF_OFF;
 
@@ -197,6 +199,6 @@ void nvm_cleanup_server(struct redisServer* server) {
   server->nvm_server = NULL;
   server->nvm_mode = 0;
 
-  printf("Cleanup NVM server finished.\n");
+  serverLog(LL_WARNING, "Cleanup NVM server finished.");
 }
 

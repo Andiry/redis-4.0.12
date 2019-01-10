@@ -26,7 +26,7 @@ struct nvm_server {
 };
 
 
-#define NVM_DICT_ENTRIES  ((uint64_t)64*1024*1024)
+#define NVM_DICT_ENTRIES  ((uint64_t)16*1024*1024)
 #define NVM_HASHTABLE_INIT_SIZE (NVM_DICT_ENTRIES * sizeof(dictEntry*))
 #define NVM_DATA_INIT_SIZE (NVM_DICT_ENTRIES * 64)
 
