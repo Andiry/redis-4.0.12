@@ -1,28 +1,34 @@
 #ifndef __REDIS_NVM_H
 #define __REDIS_NVM_H
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "sds.h"
-#include "dict.h"
 #include "server.h"
 
-/* Redis NVM header file. */
-
+/*
+ * Redis NVM dictionary.
+ * A NVM dictionary has two hashtables and one data file.
+ */
 struct nvm_dict {
-  void*   hast_table_addr;  // mmap addr of hash table file.
-  size_t  hast_table_size;
+  void*   hashtable0_addr;  // mmap addr of hash table file 0.
+  size_t  hashtable0_size;
+  int     hashtable0_fd;
+  void*   hashtable1_addr;  // mmap addr of hash table file 1.
+  size_t  hashtable1_size;
+  int     hashtable1_fd;
   void*   data_addr;        // mmap addr of data file.
   size_t  data_size;
-  off_t   allocated_size;   // Allocate from here.
+  off_t   allocated_size;   // Data file allocated from here.
+  int     data_fd;
 };
 
 struct nvm_server {
   int     num_dicts;
   struct  nvm_dict *nvm_dicts;
 };
+
+
+#define NVM_DICT_ENTRIES  ((uint64_t)64*1024*1024)
+#define NVM_HASHTABLE_INIT_SIZE (NVM_DICT_ENTRIES * sizeof(dictEntry*))
+#define NVM_DATA_INIT_SIZE (NVM_DICT_ENTRIES * 64)
 
 /* Simple log-structured NVM allocator. */
 static inline void* nvm_alloc_data_buf(struct nvm_dict *nvm_dict,
@@ -36,6 +42,27 @@ static inline void* nvm_alloc_data_buf(struct nvm_dict *nvm_dict,
 
   nvm_dict->allocated_size += size;
   return p;
+}
+
+static inline void* nvm_get_ht_addr(struct nvm_dict* nvm_dict,
+                                    int hashtable_id,
+                                    off_t offset) {
+  serverAssert(hashtable_id == 0 || hashtable_id == 1);
+
+  if (hashtable_id == 0) {
+    serverAssert((unsigned long)offset < nvm_dict->hashtable0_size);
+    return (void*)((unsigned long)nvm_dict->hashtable0_addr + offset);
+  } else {
+    serverAssert((unsigned long)offset < nvm_dict->hashtable1_size);
+    return (void*)((unsigned long)nvm_dict->hashtable1_addr + offset);
+  }
+}
+
+static inline void* nvm_get_data_addr(struct nvm_dict* nvm_dict,
+                                      off_t offset) {
+  serverAssert((unsigned long)offset < nvm_dict->data_size);
+
+  return (void*)((unsigned long)nvm_dict->data_addr + offset);
 }
 
 /* Copy sds string to NVM */
@@ -76,7 +103,12 @@ static inline void* nvm_copy_robj(struct nvm_dict* nvm_dict, void* source) {
 /* Free robj in NVM */
 static inline void nvm_free_robj(struct nvm_dict* nvm_dict, void* robj) {
   /* FIXME: Not supported yet. Perhaps use GC to compact and recycle. */
+  (void)nvm_dict;
+  (void)robj;
   return;
 }
+
+int nvm_init_server(struct redisServer* server);
+void nvm_cleanup_server(struct redisServer* server);
 
 #endif

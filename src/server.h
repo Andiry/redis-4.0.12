@@ -1202,6 +1202,7 @@ struct redisServer {
     size_t system_memory_size;  /* Total memory in system as reported by OS */
 
     /* NVM related. */
+    void* nvm_server;
     int nvm_mode;
 
     /* Mutexes used to protect atomic variables when atomic builtins are
