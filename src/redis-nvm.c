@@ -125,7 +125,6 @@ int nvm_init_server(struct redisServer* server) {
   }
 
   server->nvm_server = (void*)nvm_server;
-  server->nvm_mode = 1;
 
   for (int i = 0; i < nvm_server->num_dicts; i++) {
     sprintf(name, "%s%d.dict", prefix, i);
@@ -157,6 +156,10 @@ int nvm_init_server(struct redisServer* server) {
   }
 
   printf("Initialize NVM server finished.\n");
+  /* NVM mode. Disable appendfsync. */
+  printf("Running Redis in NVM mode. Disable appenfsync.\n");
+  server->aof_fsync = AOF_FSYNC_NO;
+  server->aof_state = AOF_OFF;
 
 out:
   if (ret)

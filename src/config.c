@@ -464,10 +464,6 @@ void loadServerConfigFromString(char *config) {
                 err = "argument must be 'no', 'always' or 'everysec'";
                 goto loaderr;
             }
-            if (server.nvm_mode == 1) {
-                /* Disable appendfsync in NVM mode. */
-                server.aof_fsync = AOF_FSYNC_NO;
-            }
         } else if (!strcasecmp(argv[0],"auto-aof-rewrite-percentage") &&
                    argc == 2)
         {
@@ -743,9 +739,6 @@ void loadServerConfigFromString(char *config) {
                 if (err) goto loaderr;
             }
         } else if (!strcasecmp(argv[0], "nvm")) {
-            /* NVM mode. Disable appendfsync. */
-            printf("Running Redis in NVM mode. Disable appenfsync.\n");
-            server.aof_fsync = AOF_FSYNC_NO;
             server.nvm_mode = 1;
         } else {
             err = "Bad directive or wrong number of arguments"; goto loaderr;

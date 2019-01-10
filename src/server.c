@@ -34,6 +34,8 @@
 #include "latency.h"
 #include "atomicvar.h"
 
+#include "redis-nvm.h"
+
 #include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -2560,6 +2562,7 @@ int prepareForShutdown(int flags) {
     }
 
     if (server.aof_state != AOF_OFF) {
+        serverLog(LL_WARNING, "Finishing AOF.");
         /* Kill the AOF saving child as the AOF we already have may be longer
          * but contains the full dataset anyway. */
         if (server.aof_child_pid != -1) {
@@ -2578,6 +2581,9 @@ int prepareForShutdown(int flags) {
         flushAppendOnlyFile(1);
         aof_fsync(server.aof_fd);
     }
+
+    if (server.nvm_mode == 1)
+      nvm_cleanup_server(&server);
 
     /* Create a new RDB file before exiting. */
     if ((server.saveparamslen > 0 && !nosave) || save) {
@@ -3843,6 +3849,9 @@ int main(int argc, char **argv) {
         loadServerConfig(configfile,options);
         sdsfree(options);
     }
+
+    if (server.nvm_mode == 1)
+      nvm_init_server(&server);
 
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
