@@ -8,16 +8,18 @@
  * A NVM dictionary has two hashtables and one data file.
  */
 struct nvm_dict {
-  void*   hashtable0_addr;  // mmap addr of hash table file 0.
-  size_t  hashtable0_size;
-  int     hashtable0_fd;
-  void*   hashtable1_addr;  // mmap addr of hash table file 1.
-  size_t  hashtable1_size;
-  int     hashtable1_fd;
-  void*   data_addr;        // mmap addr of data file.
-  size_t  data_size;
-  off_t   allocated_size;   // Data file allocated from here.
-  int     data_fd;
+  void*     hashtable0_addr;  // mmap addr of hash table file 0.
+  size_t    hashtable0_size;
+  int       hashtable0_fd;
+  size_t    hashtable0_keys;
+  void*     hashtable1_addr;  // mmap addr of hash table file 1.
+  size_t    hashtable1_size;
+  int       hashtable1_fd;
+  size_t    hashtable1_keys;
+  void*     data_addr;        // mmap addr of data file.
+  size_t    data_size;
+  off_t     allocated_size;   // Data file allocated from here.
+  int       data_fd;
 };
 
 struct nvm_server {

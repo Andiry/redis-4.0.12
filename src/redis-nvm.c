@@ -117,6 +117,8 @@ int nvm_init_server(struct redisServer* server) {
   nvm_server->num_dicts = server->dbnum;
   nvm_server->nvm_dicts = zmalloc(sizeof(struct nvm_dict) *
                                   nvm_server->num_dicts);
+  memset(nvm_server->nvm_dicts, 0, sizeof(struct nvm_dict) *
+         nvm_server->num_dicts);
 
   if (!nvm_server->nvm_dicts) {
     serverPanic("Failed to allocate nvm dicts");
@@ -170,6 +172,17 @@ out:
   return ret;
 }
 
+static void nvm_dump_dict_info(struct nvm_dict* nvm_dict,
+                               int index) {
+  serverLog(LL_WARNING, "NVM dict %d:", index);
+  serverLog(LL_WARNING, "Hashtable0 size %lu, keys %lu",
+            nvm_dict->hashtable0_size, nvm_dict->hashtable0_keys);
+  serverLog(LL_WARNING, "Hashtable1 size %lu, keys %lu",
+            nvm_dict->hashtable1_size, nvm_dict->hashtable1_keys);
+  serverLog(LL_WARNING, "Data size %lu, used %lu",
+            nvm_dict->data_size, nvm_dict->allocated_size);
+}
+
 void nvm_cleanup_server(struct redisServer* server) {
   struct nvm_server* nvm_server = (struct nvm_server*)server->nvm_server;
   char name[256];
@@ -181,6 +194,7 @@ void nvm_cleanup_server(struct redisServer* server) {
   for (int i = 0; i < nvm_server->num_dicts; i++) {
     struct nvm_dict* nvm_dict = &nvm_server->nvm_dicts[i];
 
+    nvm_dump_dict_info(nvm_dict, i);
     nvm_dict_unmap_files(nvm_dict);
 
     sprintf(name, "%s%d.dict", prefix, i);
