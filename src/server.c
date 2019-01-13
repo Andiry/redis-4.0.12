@@ -3758,7 +3758,9 @@ int main(int argc, char **argv) {
     gettimeofday(&tv,NULL);
     char hashseed[16];
     getRandomHexChars(hashseed,sizeof(hashseed));
-    dictSetHashFunctionSeed((uint8_t*)hashseed);
+
+    /* Do not change hash seed for NVM */
+//    dictSetHashFunctionSeed((uint8_t*)hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
     initServerConfig();
     moduleInitModulesSystem();
