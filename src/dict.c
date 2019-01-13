@@ -135,6 +135,10 @@ int dictResize(dict *d)
 {
     int minimal;
 
+    /* Do not resize NVM dict. */
+    if (d->use_nvm)
+      return DICT_OK;
+
     if (!dict_can_resize || dictIsRehashing(d)) return DICT_ERR;
     minimal = d->ht[0].used;
     if (minimal < DICT_HT_INITIAL_SIZE)
