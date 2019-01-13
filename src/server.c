@@ -2583,9 +2583,6 @@ int prepareForShutdown(int flags) {
         aof_fsync(server.aof_fd);
     }
 
-    if (server.nvm_mode == 1)
-      nvm_cleanup_server(&server);
-
     /* Create a new RDB file before exiting. */
     if ((server.saveparamslen > 0 && !nosave) || save) {
         serverLog(LL_NOTICE,"Saving the final RDB snapshot before exiting.");
@@ -2617,6 +2614,10 @@ int prepareForShutdown(int flags) {
     closeListeningSockets(1);
     serverLog(LL_WARNING,"%s is now ready to exit, bye bye...",
         server.sentinel_mode ? "Sentinel" : "Redis");
+
+    if (server.nvm_mode == 1)
+      nvm_cleanup_server(&server);
+
     return C_OK;
 }
 
