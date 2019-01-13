@@ -174,6 +174,7 @@ void dbAdd(redisDb *db, robj *key, robj *val) {
                 "val encoding %u, key size %lu",
                 key->encoding, val->encoding,
                 sdslen((sds)(key->ptr)));
+      /* Key is always a string. */
       copy = nvm_copy_sds(db->dict->nvm_dict, key->ptr);
     } else {
       copy = sdsdup(key->ptr);

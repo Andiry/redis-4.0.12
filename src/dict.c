@@ -267,8 +267,11 @@ int dictAdd(dict *d, void *key, void *val)
 
     if (!entry) return DICT_ERR;
     if (d->use_nvm) {
+      void* copy = val;
       serverLog(LL_WARNING, "dictAdd NVM");
-      void *copy = nvm_copy_robj(d->nvm_dict, val);
+      if (val && (((robj*)val)->encoding == OBJ_ENCODING_EMBSTR ||
+                  ((robj*)val)->encoding == OBJ_ENCODING_RAW))
+        copy = nvm_copy_robj(d->nvm_dict, val);
       dictSetVal(d, entry, copy);
     } else {
       dictSetVal(d, entry, val);
@@ -356,10 +359,14 @@ int dictReplace(dict *d, void *key, void *val)
      * reverse. */
     auxentry = *existing;
     if (d->use_nvm) {
+      void* copy = val;
       serverLog(LL_WARNING, "dictReplace NVM");
-      void* copy = nvm_copy_robj(d->nvm_dict, val);
+
+      if (val && (((robj*)val)->encoding == OBJ_ENCODING_EMBSTR ||
+                  ((robj*)val)->encoding == OBJ_ENCODING_RAW))
+        copy = nvm_copy_robj(d->nvm_dict, val);
+
       /* FIXME: Free NVM object support */
-      copy = auxentry.v.val;
       dictSetVal(d, existing, copy);
     } else {
       dictSetVal(d, existing, val);
