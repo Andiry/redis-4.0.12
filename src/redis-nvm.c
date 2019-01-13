@@ -102,6 +102,23 @@ static void nvm_init_dict(struct nvm_dict* nvm_dict) {
   nvm_dict->data_size = NVM_DATA_INIT_SIZE;
 }
 
+static void nvm_dump_dict_info(struct nvm_dict* nvm_dict,
+                               int index) {
+  serverLog(LL_WARNING, "NVM dict %d:", index);
+  serverLog(LL_WARNING, "Hashtable0 size %lu, keys %lu",
+            nvm_dict->hashtable0_size, nvm_dict->hashtable0_keys);
+  serverLog(LL_WARNING, "Hashtable0 addr %p, fd %d",
+            nvm_dict->hashtable0_addr, nvm_dict->hashtable0_fd);
+  serverLog(LL_WARNING, "Hashtable1 size %lu, keys %lu",
+            nvm_dict->hashtable1_size, nvm_dict->hashtable1_keys);
+  serverLog(LL_WARNING, "Hashtable1 addr %p, fd %d",
+            nvm_dict->hashtable1_addr, nvm_dict->hashtable1_fd);
+  serverLog(LL_WARNING, "Data size %lu, used %lu",
+            nvm_dict->data_size, nvm_dict->allocated_size);
+  serverLog(LL_WARNING, "Data addr %p, fd %d",
+            nvm_dict->data_addr, nvm_dict->data_fd);
+}
+
 int nvm_init_server(struct redisServer* server) {
   struct nvm_server* nvm_server;
   int fd;
@@ -133,9 +150,9 @@ int nvm_init_server(struct redisServer* server) {
     dict* redis_dict = server->db[i].dict;
 
     sprintf(name, "%s%d.dict", prefix, i);
-    serverLog(LL_WARNING, "Create NVM dict %d", i);
     if ((fd = open(name, O_RDWR, 0666)) < 0) {
       /* Create new NVM dict */
+      serverLog(LL_WARNING, "Create NVM dict %d", i);
       if ((fd = open(name, O_CREAT | O_RDWR, 0666)) < 0) {
         serverLog(LL_WARNING, "Create NVM dict file %s failed", name);
         ret = -EINVAL;
@@ -144,6 +161,7 @@ int nvm_init_server(struct redisServer* server) {
       nvm_init_dict(nvm_dict);
     } else {
       /* Read existing NVM dict */
+      serverLog(LL_WARNING, "Open NVM dict %d", i);
       ssize_t size = read(fd, nvm_dict, sizeof(struct nvm_dict));
       if (size != sizeof(struct nvm_dict)) {
         serverLog(LL_WARNING, "Read NVM dict %s failed, create new one", name);
@@ -158,8 +176,7 @@ int nvm_init_server(struct redisServer* server) {
       goto out;
     }
 
-    serverLog(LL_WARNING, "NVM dict %d: size %lu, allocated %lu",
-              i, nvm_dict->data_size, nvm_dict->allocated_size);
+    nvm_dump_dict_info(nvm_dict, i);
   }
 
   serverLog(LL_WARNING, "Initialize NVM server finished.");
@@ -177,17 +194,6 @@ out:
     nvm_cleanup_server(server);
 
   return ret;
-}
-
-static void nvm_dump_dict_info(struct nvm_dict* nvm_dict,
-                               int index) {
-  serverLog(LL_WARNING, "NVM dict %d:", index);
-  serverLog(LL_WARNING, "Hashtable0 size %lu, keys %lu",
-            nvm_dict->hashtable0_size, nvm_dict->hashtable0_keys);
-  serverLog(LL_WARNING, "Hashtable1 size %lu, keys %lu",
-            nvm_dict->hashtable1_size, nvm_dict->hashtable1_keys);
-  serverLog(LL_WARNING, "Data size %lu, used %lu",
-            nvm_dict->data_size, nvm_dict->allocated_size);
 }
 
 void nvm_cleanup_server(struct redisServer* server) {

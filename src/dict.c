@@ -316,7 +316,7 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
      * more frequently. */
     ht = dictIsRehashing(d) ? &d->ht[1] : &d->ht[0];
     if (d->use_nvm) {
-      serverLog(LL_WARNING, "dictAddRaw");
+      serverLog(LL_WARNING, "dictAddRaw\n");
       entry = nvm_alloc_data_buf(d->nvm_dict, sizeof(dictEntry));
       if (ht == &d->ht[0])
         d->nvm_dict->hashtable0_keys++;
