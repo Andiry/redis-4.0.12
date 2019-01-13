@@ -157,6 +157,9 @@ int nvm_init_server(struct redisServer* server) {
       serverLog(LL_WARNING, "Create NVM dict %s failed", name);
       goto out;
     }
+
+    serverLog(LL_WARNING, "NVM dict %d: size %lu, allocated %lu",
+              i, nvm_dict->data_size, nvm_dict->allocated_size);
   }
 
   serverLog(LL_WARNING, "Initialize NVM server finished.");
@@ -164,6 +167,10 @@ int nvm_init_server(struct redisServer* server) {
   serverLog(LL_WARNING, "Running Redis in NVM mode. Disable appenfsync.");
   server->aof_fsync = AOF_FSYNC_NO;
   server->aof_state = AOF_OFF;
+
+  for (int i = 0; i < server->dbnum; i++) {
+    server->db[i].use_nvm = 1;
+  }
 
 out:
   if (ret)

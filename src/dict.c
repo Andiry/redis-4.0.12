@@ -45,11 +45,8 @@
 
 #include "dict.h"
 #include "zmalloc.h"
-#ifndef DICT_BENCHMARK_MAIN
-#include "redisassert.h"
-#else
+#include "redis-nvm.h"
 #include <assert.h>
-#endif
 
 /* Using dictEnableResize() / dictDisableResize() we make possible to
  * enable/disable resizing of the hash table as needed. This is very important
@@ -127,6 +124,8 @@ int _dictInit(dict *d, dictType *type,
     d->privdata = privDataPtr;
     d->rehashidx = -1;
     d->iterators = 0;
+    d->nvm_dict = NULL;
+    d->use_nvm = 0;
     return DICT_OK;
 }
 
@@ -267,7 +266,13 @@ int dictAdd(dict *d, void *key, void *val)
     dictEntry *entry = dictAddRaw(d,key,NULL);
 
     if (!entry) return DICT_ERR;
-    dictSetVal(d, entry, val);
+    if (d->use_nvm) {
+      serverLog(LL_WARNING, "dictAdd NVM");
+      void *copy = nvm_copy_robj(d->nvm_dict, val);
+      dictSetVal(d, entry, copy);
+    } else {
+      dictSetVal(d, entry, val);
+    }
     return DICT_OK;
 }
 
@@ -307,7 +312,17 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
      * system it is more likely that recently added entries are accessed
      * more frequently. */
     ht = dictIsRehashing(d) ? &d->ht[1] : &d->ht[0];
-    entry = zmalloc(sizeof(*entry));
+    if (d->use_nvm) {
+      serverLog(LL_WARNING, "dictAddRaw");
+      entry = nvm_alloc_data_buf(d->nvm_dict, sizeof(dictEntry));
+      if (ht == &d->ht[0])
+        d->nvm_dict->hashtable0_keys++;
+      else
+        d->nvm_dict->hashtable1_keys++;
+    } else {
+      entry = zmalloc(sizeof(*entry));
+    }
+
     entry->next = ht->table[index];
     ht->table[index] = entry;
     ht->used++;
@@ -340,8 +355,16 @@ int dictReplace(dict *d, void *key, void *val)
      * you want to increment (set), and then decrement (free), and not the
      * reverse. */
     auxentry = *existing;
-    dictSetVal(d, existing, val);
-    dictFreeVal(d, &auxentry);
+    if (d->use_nvm) {
+      serverLog(LL_WARNING, "dictReplace NVM");
+      void* copy = nvm_copy_robj(d->nvm_dict, val);
+      /* FIXME: Free NVM object support */
+      copy = auxentry.v.val;
+      dictSetVal(d, existing, copy);
+    } else {
+      dictSetVal(d, existing, val);
+      dictFreeVal(d, &auxentry);
+    }
     return 0;
 }
 

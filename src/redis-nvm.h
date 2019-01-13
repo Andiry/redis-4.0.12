@@ -39,7 +39,7 @@ static inline void* nvm_alloc_data_buf(struct nvm_dict *nvm_dict,
                      nvm_dict->allocated_size);
 
   /* TODO: Expand data file. */
-  if ((unsigned long)p + size > nvm_dict->data_size)
+  if (nvm_dict->allocated_size + size > nvm_dict->data_size)
     return NULL;
 
   nvm_dict->allocated_size += size;
@@ -94,6 +94,8 @@ static inline void* nvm_copy_robj(struct nvm_dict* nvm_dict, void* source) {
   if (!copy)
     serverPanic("Failed to allocate robj metadata");
 
+  serverLog(LL_WARNING, "copy %p, source encoding %u, ptr %p\n",
+            (void*)copy, src->encoding, src->ptr);
   copy->type = src->type;
   copy->encoding = src->encoding;
   copy->lru = src->lru;

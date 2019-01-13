@@ -80,7 +80,7 @@ typedef struct dict {
     long rehashidx; /* rehashing not in progress if rehashidx == -1 */
     unsigned long iterators; /* number of iterators currently running */
 
-    void* nvm_dict;
+    struct nvm_dict* nvm_dict;
     int use_nvm;
 } dict;
 

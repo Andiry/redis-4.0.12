@@ -30,6 +30,7 @@
 #include "server.h"
 #include "cluster.h"
 #include "atomicvar.h"
+#include "redis-nvm.h"
 
 #include <signal.h>
 #include <ctype.h>
@@ -165,8 +166,20 @@ robj *lookupKeyWriteOrReply(client *c, robj *key, robj *reply) {
  *
  * The program is aborted if the key already exists. */
 void dbAdd(redisDb *db, robj *key, robj *val) {
-    sds copy = sdsdup(key->ptr);
-    int retval = dictAdd(db->dict, copy, val);
+    sds copy;
+    int retval;
+
+    if (db->use_nvm) {
+      serverLog(LL_WARNING, "dbAdd NVM, key encoding %u, "
+                "val encoding %u, key size %lu",
+                key->encoding, val->encoding,
+                sdslen((sds)(key->ptr)));
+      copy = nvm_copy_sds(db->dict->nvm_dict, key->ptr);
+    } else {
+      copy = sdsdup(key->ptr);
+    }
+
+    retval = dictAdd(db->dict, copy, val);
 
     serverAssertWithInfo(NULL,key,retval == DICT_OK);
     if (val->type == OBJ_LIST) signalListAsReady(db, key);
