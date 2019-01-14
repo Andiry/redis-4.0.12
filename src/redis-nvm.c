@@ -108,6 +108,7 @@ static void nvm_init_dict(struct nvm_dict* nvm_dict) {
   nvm_dict->hashtable0_size = NVM_HASHTABLE_INIT_SIZE;
   nvm_dict->hashtable1_size = NVM_HASHTABLE_INIT_SIZE;
   nvm_dict->allocated_size = 0;
+  nvm_dict->stored_data_addr = NULL;
   nvm_dict->data_size = NVM_DATA_INIT_SIZE;
 }
 
@@ -126,6 +127,42 @@ static void nvm_dump_dict_info(struct nvm_dict* nvm_dict,
             nvm_dict->data_size, nvm_dict->allocated_size);
   serverLog(LL_WARNING, "Data addr %p, fd %d",
             nvm_dict->data_addr, nvm_dict->data_fd);
+}
+
+static void nvm_dict_update_data_address(struct nvm_dict* nvm_dict) {
+  dictEntry** table;
+  dictEntry *entry, **entry_addr;
+  int size;
+
+  for (int i = 0; i < 2; i++) {
+    if (i == 0) {
+      table = (dictEntry**)(nvm_dict->hashtable0_addr);
+      size = nvm_dict->hashtable0_size / sizeof(dictEntry*);
+      if (nvm_dict->hashtable0_keys == 0)
+        continue;
+    } else {
+      table = (dictEntry**)(nvm_dict->hashtable1_addr);
+      size = nvm_dict->hashtable1_size / sizeof(dictEntry*);
+      if (nvm_dict->hashtable1_keys == 0)
+        continue;
+    }
+
+    for (int j = 0; j < size; j++) {
+      entry = table[j];
+      entry_addr = &table[j];
+      while (entry) {
+        entry = nvm_update_data_addr(nvm_dict, (unsigned long)entry);
+        *entry_addr = entry;
+        entry->key = nvm_update_data_addr(nvm_dict, (unsigned long)(entry->key));
+        entry->v.val = nvm_update_data_addr(nvm_dict, (unsigned long)(entry->v.val));
+        robj* val = (robj*)(entry->v.val);
+        if (val->encoding == OBJ_ENCODING_EMBSTR || val->encoding == OBJ_ENCODING_RAW)
+          val->ptr = nvm_update_data_addr(nvm_dict, (unsigned long)(val->ptr));
+        entry_addr = &(entry->next);
+        entry = entry->next;
+      }
+    }
+  }
 }
 
 int nvm_init_server(struct redisServer* server) {
@@ -186,6 +223,15 @@ int nvm_init_server(struct redisServer* server) {
       goto out;
     }
 
+    /* Update data pointers */
+    if (nvm_dict->stored_data_addr != NULL &&
+        nvm_dict->data_addr != nvm_dict->stored_data_addr) {
+      serverLog(LL_WARNING, "Adjust NVM dict data address: stored %p, curr %p",
+                nvm_dict->stored_data_addr, nvm_dict->data_addr);
+      nvm_dict_update_data_address(nvm_dict);
+    }
+
+    nvm_dict->stored_data_addr = nvm_dict->data_addr;
     nvm_dump_dict_info(nvm_dict, i);
   }
 

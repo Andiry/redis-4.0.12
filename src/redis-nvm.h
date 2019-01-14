@@ -16,7 +16,8 @@ struct nvm_dict {
   size_t    hashtable1_size;
   int       hashtable1_fd;
   size_t    hashtable1_keys;
-  void*     data_addr;        // mmap addr of data file.
+  void*     data_addr;        // Current mmap addr of data file.
+  void*     stored_data_addr; // Last mmap addr of data file.
   size_t    data_size;
   off_t     allocated_size;   // Data file allocated from here.
   int       data_fd;
@@ -65,6 +66,13 @@ static inline void* nvm_get_data_addr(struct nvm_dict* nvm_dict,
   serverAssert((unsigned long)offset < nvm_dict->data_size);
 
   return (void*)((unsigned long)nvm_dict->data_addr + offset);
+}
+
+/* Data file remmap changes the addr. Update accordingly. */
+static inline void* nvm_update_data_addr(struct nvm_dict* nvm_dict,
+                                         unsigned long value) {
+  return (void *)(value - (unsigned long)(nvm_dict->stored_data_addr)
+                  + (unsigned long)(nvm_dict->data_addr));
 }
 
 /* Copy sds string to NVM */
