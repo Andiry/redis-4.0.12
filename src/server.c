@@ -34,7 +34,6 @@
 #include "latency.h"
 #include "atomicvar.h"
 
-#include "pmem.h"
 #include "redis-nvm.h"
 
 #include <time.h>

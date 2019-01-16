@@ -42,9 +42,9 @@ static int nvm_map_dict_file(const char* filename,
 }
 
 static void nvm_dict_unmap_files(struct nvm_dict* nvm_dict) {
-  msync(nvm_dict->hashtable0_addr, nvm_dict->hashtable0_size, MS_SYNC);
-  msync(nvm_dict->hashtable1_addr, nvm_dict->hashtable1_size, MS_SYNC);
-  msync(nvm_dict->data_addr, nvm_dict->data_size, MS_SYNC);
+  pmem_msync(nvm_dict->hashtable0_addr, nvm_dict->hashtable0_size);
+  pmem_msync(nvm_dict->hashtable1_addr, nvm_dict->hashtable1_size);
+  pmem_msync(nvm_dict->data_addr, nvm_dict->data_size);
   munmap(nvm_dict->hashtable0_addr, nvm_dict->hashtable0_size);
   munmap(nvm_dict->hashtable1_addr, nvm_dict->hashtable1_size);
   munmap(nvm_dict->data_addr, nvm_dict->data_size);
@@ -195,7 +195,7 @@ int nvm_init_server(struct redisServer* server) {
     struct nvm_dict* nvm_dict = &nvm_server->nvm_dicts[i];
     dict* redis_dict = server->db[i].dict;
 
-    serverLog(LL_WARNING, "Init dict%d %p", i, redis_dict);
+    serverLog(LL_WARNING, "Init dict%d %p", i, (void*)redis_dict);
     sprintf(name, "%s%d.dict", prefix, i);
     if ((fd = open(name, O_RDWR, 0666)) < 0) {
       /* Create new NVM dict */

@@ -1,6 +1,7 @@
 #ifndef __REDIS_NVM_H
 #define __REDIS_NVM_H
 
+#include "pmem.h"
 #include "server.h"
 
 /*
@@ -90,8 +91,9 @@ static inline void* nvm_copy_sds(struct nvm_dict* nvm_dict, void* source) {
   sh->len = len;
   sh->alloc = len;
   sh->flags = SDS_TYPE_64;
-  memcpy(sh->buf, source, len);
+  pmem_memcpy_flush(sh->buf, source, len);
   sh->buf[len] = '\0';
+  pmem_flush(sh, sizeof(struct sdshdr64));
   return (void *)sh->buf;
 }
 
@@ -109,6 +111,7 @@ static inline void* nvm_copy_robj(struct nvm_dict* nvm_dict, void* source) {
   copy->lru = src->lru;
   copy->refcount = src->refcount;
   copy->ptr = nvm_copy_sds(nvm_dict, src->ptr);
+  pmem_flush(copy, sizeof(robj));
   return (void *)copy;
 }
 
