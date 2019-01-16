@@ -34,6 +34,7 @@
 #include "latency.h"
 #include "atomicvar.h"
 
+#include "pmem.h"
 #include "redis-nvm.h"
 
 #include <time.h>
@@ -3879,8 +3880,10 @@ int main(int argc, char **argv) {
     redisAsciiArt();
     checkTcpBacklogSettings();
 
-    if (server.nvm_mode == 1)
+    if (server.nvm_mode == 1) {
+      pmem_init();
       nvm_init_server(&server);
+    }
 
     if (!server.sentinel_mode) {
         /* Things not needed when running in Sentinel mode. */
