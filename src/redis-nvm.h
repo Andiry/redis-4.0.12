@@ -104,8 +104,8 @@ static inline void* nvm_copy_robj(struct nvm_dict* nvm_dict, void* source) {
   if (!copy)
     serverPanic("Failed to allocate robj metadata");
 
-  serverLog(LL_WARNING, "copy %p, source encoding %u, ptr %p\n",
-            (void*)copy, src->encoding, src->ptr);
+//  serverLog(LL_WARNING, "copy %p, source encoding %u, ptr %p\n",
+//            (void*)copy, src->encoding, src->ptr);
   copy->type = src->type;
   copy->encoding = src->encoding;
   copy->lru = src->lru;
