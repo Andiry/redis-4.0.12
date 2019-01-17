@@ -272,7 +272,7 @@ int dictAdd(dict *d, void *key, void *val)
     if (!entry) return DICT_ERR;
     if (d->use_nvm) {
       void* copy = val;
-      serverLog(LL_WARNING, "dictAdd NVM");
+//    serverLog(LL_WARNING, "dictAdd NVM");
       if (val && (((robj*)val)->encoding == OBJ_ENCODING_EMBSTR ||
                   ((robj*)val)->encoding == OBJ_ENCODING_RAW))
         copy = nvm_copy_robj(d->nvm_dict, val);
@@ -320,7 +320,7 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
      * more frequently. */
     ht = dictIsRehashing(d) ? &d->ht[1] : &d->ht[0];
     if (d->use_nvm) {
-      serverLog(LL_WARNING, "dictAddRaw\n");
+//    serverLog(LL_WARNING, "dictAddRaw\n");
       entry = nvm_alloc_data_buf(d->nvm_dict, sizeof(dictEntry));
       if (ht == &d->ht[0])
         d->nvm_dict->hashtable0_keys++;
@@ -330,8 +330,12 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
       entry = zmalloc(sizeof(*entry));
     }
 
+    /* FIXME: Do this finally. */
     entry->next = ht->table[index];
     ht->table[index] = entry;
+    if (d->use_nvm)
+      pmem_flush(&ht->table[index], sizeof(dictEntry *));
+
     ht->used++;
 
     /* Set the hash entry fields. */
@@ -364,7 +368,7 @@ int dictReplace(dict *d, void *key, void *val)
     auxentry = *existing;
     if (d->use_nvm) {
       void* copy = val;
-      serverLog(LL_WARNING, "dictReplace NVM");
+//    serverLog(LL_WARNING, "dictReplace NVM");
 
       if (val && (((robj*)val)->encoding == OBJ_ENCODING_EMBSTR ||
                   ((robj*)val)->encoding == OBJ_ENCODING_RAW))

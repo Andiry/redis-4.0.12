@@ -170,10 +170,10 @@ void dbAdd(redisDb *db, robj *key, robj *val) {
     int retval;
 
     if (db->use_nvm) {
-      serverLog(LL_WARNING, "dbAdd NVM, key encoding %u, "
-                "val encoding %u, key size %lu",
-                key->encoding, val->encoding,
-                sdslen((sds)(key->ptr)));
+//      serverLog(LL_WARNING, "dbAdd NVM, key encoding %u, "
+//                "val encoding %u, key size %lu",
+//                key->encoding, val->encoding,
+//               sdslen((sds)(key->ptr)));
       /* Key is always a string. */
       copy = nvm_copy_sds(db->dict->nvm_dict, key->ptr);
     } else {
